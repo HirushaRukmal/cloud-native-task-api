@@ -1,0 +1,11 @@
+node_modules
+npm-debug.log
+.git
+.github
+k8s
+prometheus
+grafana
+scripts
+test
+README.md
+.env
