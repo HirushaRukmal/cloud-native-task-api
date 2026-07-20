@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: task-api
+  namespace: cloud-native
+  labels:
+    app: task-api
+spec:
+  type: LoadBalancer
+  selector:
+    app: task-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
