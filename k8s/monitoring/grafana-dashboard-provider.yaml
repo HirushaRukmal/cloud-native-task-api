@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-provider
+  namespace: cloud-native
+data:
+  dashboard.yml: |
+    apiVersion: 1
+    providers:
+      - name: Cloud Native Task API
+        folder: Cloud Native
+        type: file
+        disableDeletion: true
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards
