@@ -156,16 +156,6 @@ kubectl rollout status deployment/task-api -n cloud-native
 az group delete --name cloud-native-task-api-rg --yes --no-wait
 ```
 
-## Resume description
-
-**Cloud-Native Application Deployment**  
-*Node.js, Docker, Kubernetes, Azure, GitHub Actions, Prometheus, Grafana*
-
-- Containerised a Node.js REST API using a multi-stage Docker build and deployed it to Azure Kubernetes Service with health probes, resource controls, rolling updates, and horizontal autoscaling.
-- Built GitHub Actions CI/CD workflows to run automated tests, publish versioned images to Azure Container Registry, and deploy updates to Kubernetes.
-- Configured Kubernetes Deployments, Services, ConfigMaps, PodDisruptionBudget, and HorizontalPodAutoscaler resources to support repeatable and scalable delivery.
-- Instrumented the application with Prometheus metrics and provisioned Grafana dashboards to monitor request volume, latency, errors, process memory, and service health.
-
 ## Licence
 
 MIT
