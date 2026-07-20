@@ -1,0 +1,84 @@
+name: Deploy to AKS
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "package*.json"
+      - "Dockerfile"
+      - "k8s/**"
+      - ".github/workflows/deploy-aks.yml"
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+  AKS_CLUSTER: ${{ vars.AKS_CLUSTER_NAME }}
+  ACR_NAME: ${{ vars.ACR_NAME }}
+  IMAGE_NAME: cloud-native-task-api
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies and run tests
+        run: |
+          npm install
+          npm run check
+          npm test
+
+      - name: Azure login with OpenID Connect
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Sign in to Azure Container Registry
+        run: az acr login --name "$ACR_NAME"
+
+      - name: Build and push image
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          IMAGE="$ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG"
+          docker build --tag "$IMAGE" .
+          docker push "$IMAGE"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+
+      - name: Configure AKS credentials
+        run: |
+          az aks get-credentials \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "$AKS_CLUSTER" \
+            --overwrite-existing
+
+      - name: Deploy Kubernetes resources
+        run: |
+          kubectl apply -f k8s/app/namespace.yaml
+          kubectl apply -f k8s/app/configmap.yaml
+          kubectl apply -f k8s/app/service.yaml
+          kubectl apply -f k8s/app/pdb.yaml
+          sed "s|IMAGE_PLACEHOLDER|$IMAGE|g" k8s/app/deployment.yaml | kubectl apply -f -
+          kubectl apply -f k8s/app/hpa.yaml
+          kubectl rollout status deployment/task-api -n cloud-native --timeout=180s
+
+      - name: Show deployment details
+        run: kubectl get deployments,pods,services,hpa -n cloud-native
